@@ -1,0 +1,30 @@
+services:
+  bitcoind:
+    image: lncm/bitcoind:v28.0
+    volumes:
+      - ./bitcoin.conf:/data/.bitcoin/bitcoin.conf
+      - bitcoind-data:/data/.bitcoin
+    ports:
+      - "18443:18443"
+      - "18444:18444"
+    restart: unless-stopped
+
+  esplora:
+    image: blockstream/esplora:latest-arm64
+    environment:
+      ELECTRS_NETWORK: regtest
+      ELECTRS_DAEMON_RPC_ADDR: bitcoind:18443
+      ELECTRS_DAEMON_P2P_ADDR: bitcoind:18444
+      ELECTRS_COOKIE_FILE: /data/.bitcoin/regtest/.cookie
+      ELECTRS_HTTP_ADDR: 0.0.0.0:3002
+      NO_REGTEST_MINING: 1
+    volumes:
+      - bitcoind-data:/data/.bitcoin:ro
+    ports:
+      - "3002:3002"
+    depends_on:
+      - bitcoind
+    restart: unless-stopped
+
+volumes:
+  bitcoind-data:

@@ -1,0 +1,11 @@
+[package]
+name = "phoenixd-lib"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+base64 = "0.22"
+reqwest = { version = "0.12", features = ["json"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
