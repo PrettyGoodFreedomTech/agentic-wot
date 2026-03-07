@@ -11,13 +11,15 @@ services:
 
   esplora:
     image: blockstream/esplora:latest-arm64
-    environment:
-      ELECTRS_NETWORK: regtest
-      ELECTRS_DAEMON_RPC_ADDR: bitcoind:18443
-      ELECTRS_DAEMON_P2P_ADDR: bitcoind:18444
-      ELECTRS_COOKIE_FILE: /data/.bitcoin/regtest/.cookie
-      ELECTRS_HTTP_ADDR: 0.0.0.0:3002
-      NO_REGTEST_MINING: 1
+    command: >
+      /srv/explorer/electrs_bitcoin/bin/electrs
+      --network regtest
+      --daemon-dir /data/.bitcoin
+      --daemon-rpc-addr bitcoind:18443
+      --cookie user:password
+      --http-addr 0.0.0.0:3002
+      --cors '*'
+      -vv
     volumes:
       - bitcoind-data:/data/.bitcoin:ro
     ports:
