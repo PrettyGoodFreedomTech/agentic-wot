@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use bdk_esplora::esplora_client;
 use bdk_esplora::EsploraAsyncExt;
+use bdk_wallet::bitcoin::bip32::Xpriv;
 use bdk_wallet::bitcoin::{Address, Amount, Network};
 use bdk_wallet::file_store::Store;
 use bdk_wallet::{ChangeSet, KeychainKind, PersistedWallet, Wallet};
@@ -66,18 +67,24 @@ pub struct AddressResult {
     pub index: u32,
 }
 
-fn derive_descriptors(mnemonic: &Mnemonic, network: Network) -> (String, String) {
-    let m = mnemonic.to_string();
+fn derive_descriptors(
+    mnemonic: &Mnemonic,
+    network: Network,
+) -> Result<(String, String), BdkLibError> {
+    let seed = mnemonic.to_seed("");
+    let xprv = Xpriv::new_master(network, &seed)
+        .map_err(|e| BdkLibError::Wallet(format!("Failed to derive master key: {e}")))?;
+
     if network == Network::Bitcoin {
-        (
-            format!("wpkh({m}/84'/0'/0'/0/*)"),
-            format!("wpkh({m}/84'/0'/0'/1/*)"),
-        )
+        Ok((
+            format!("wpkh({xprv}/84'/0'/0'/0/*)"),
+            format!("wpkh({xprv}/84'/0'/0'/1/*)"),
+        ))
     } else {
-        (
-            format!("wpkh({m}/84'/1'/0'/0/*)"),
-            format!("wpkh({m}/84'/1'/0'/1/*)"),
-        )
+        Ok((
+            format!("wpkh({xprv}/84'/1'/0'/0/*)"),
+            format!("wpkh({xprv}/84'/1'/0'/1/*)"),
+        ))
     }
 }
 
@@ -138,7 +145,7 @@ pub fn init_wallet(config: &WalletConfig) -> Result<WalletCreationResult, BdkLib
     }
 
     let mnemonic = Mnemonic::generate(12).map_err(|e| BdkLibError::Mnemonic(e.to_string()))?;
-    let (external, internal) = derive_descriptors(&mnemonic, config.network);
+    let (external, internal) = derive_descriptors(&mnemonic, config.network)?;
     let mnemonic_str = mnemonic.to_string();
 
     save_wallet_config(config, &mnemonic_str, &external, &internal)?;
@@ -163,7 +170,7 @@ pub fn import_wallet(
 
     let mnemonic =
         Mnemonic::from_str(mnemonic_str).map_err(|e| BdkLibError::Mnemonic(e.to_string()))?;
-    let (external, internal) = derive_descriptors(&mnemonic, config.network);
+    let (external, internal) = derive_descriptors(&mnemonic, config.network)?;
     let mnemonic_string = mnemonic.to_string();
 
     save_wallet_config(config, &mnemonic_string, &external, &internal)?;
