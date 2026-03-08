@@ -8,7 +8,11 @@ use crate::types::ListDisplay;
 #[component]
 pub fn ListDetail(coordinate: String) -> Element {
     let lists: Signal<Vec<ListDisplay>> = use_context();
-    let list = lists.read().iter().find(|l| l.coordinate == coordinate).cloned();
+    let list = lists
+        .read()
+        .iter()
+        .find(|l| l.coordinate == coordinate)
+        .cloned();
     let items = mock_data::mock_items();
 
     match list {

@@ -10,7 +10,7 @@ use crate::types::{MarketplaceList, kinds};
 const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 const FETCH_PAGE_SIZE: usize = 500;
 
-/// Commands that the UI can send to the NostrService.
+/// Commands that the UI can send to the `NostrService`.
 #[derive(Debug)]
 pub enum NostrCommand {
     /// Connect to a relay URL.
@@ -31,7 +31,7 @@ pub enum NostrCommand {
     },
 }
 
-/// Marketplace-aware Nostr client wrapping nostr_sdk::Client.
+/// Marketplace-aware Nostr client wrapping `nostr_sdk::Client`.
 pub struct NostrService {
     client: Client,
 }
@@ -91,7 +91,7 @@ impl NostrService {
         Ok(events.into_iter().collect())
     }
 
-    /// Fetch a full MarketplaceList by coordinate.
+    /// Fetch a full `MarketplaceList` by coordinate.
     pub async fn fetch_marketplace_list(
         &self,
         coordinate: &str,
@@ -174,13 +174,11 @@ impl NostrService {
         let tags = dcosl_core::header::build_header_tags(&params);
         let builder = EventBuilder::new(kind, "").tags(tags);
 
-        let output = self
-            .client
-            .send_event_builder(builder)
-            .await
-            .map_err(|e| NostrLibError::PublishFailed {
+        let output = self.client.send_event_builder(builder).await.map_err(|e| {
+            NostrLibError::PublishFailed {
                 reason: e.to_string(),
-            })?;
+            }
+        })?;
 
         // Fetch the published event back
         let filter = Filter::new().id(output.val).limit(1);
@@ -217,13 +215,11 @@ impl NostrService {
 
         let builder = EventBuilder::new(kinds::ITEM, content.unwrap_or("")).tags(tags);
 
-        let output = self
-            .client
-            .send_event_builder(builder)
-            .await
-            .map_err(|e| NostrLibError::PublishFailed {
+        let output = self.client.send_event_builder(builder).await.map_err(|e| {
+            NostrLibError::PublishFailed {
                 reason: e.to_string(),
-            })?;
+            }
+        })?;
 
         Ok(output.val)
     }

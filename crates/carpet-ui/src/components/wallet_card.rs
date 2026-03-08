@@ -9,7 +9,11 @@ pub enum WalletVariant {
 #[component]
 pub fn WalletCard(variant: WalletVariant, balance_sats: u64) -> Element {
     let (icon, label, accent) = match variant {
-        WalletVariant::Bitcoin => ("ph ph-currency-btc", "Bitcoin (on-chain)", "text-orange-500"),
+        WalletVariant::Bitcoin => (
+            "ph ph-currency-btc",
+            "Bitcoin (on-chain)",
+            "text-orange-500",
+        ),
         WalletVariant::Lightning => ("ph ph-lightning", "Lightning", "text-amber-400"),
     };
 

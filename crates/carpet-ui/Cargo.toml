@@ -21,3 +21,6 @@ default = []
 web = ["dioxus/web"]
 server = ["dioxus/server", "dep:axum", "dep:tokio", "dep:nostr-lib", "dep:bdk-lib", "dep:phoenixd-lib"]
 desktop = ["dioxus/desktop"]
+
+[package.metadata.cargo-machete]
+ignored = ["axum", "tokio", "nostr-lib", "bdk-lib", "phoenixd-lib", "serde", "serde_json"]

@@ -19,9 +19,12 @@ pub async fn fetch_profile(
         .await
         .map_err(|e| NostrLibError::Sdk(e.to_string()))?;
 
-    let event = events.into_iter().next().ok_or(NostrLibError::ProfileNotFound {
-        pubkey: pubkey.to_hex(),
-    })?;
+    let event = events
+        .into_iter()
+        .next()
+        .ok_or(NostrLibError::ProfileNotFound {
+            pubkey: pubkey.to_hex(),
+        })?;
 
     serde_json::from_str(&event.content).map_err(|_| NostrLibError::ProfileNotFound {
         pubkey: pubkey.to_hex(),
@@ -29,10 +32,7 @@ pub async fn fetch_profile(
 }
 
 /// Extract lud16 (Lightning Address) from a profile.
-pub async fn fetch_lud16(
-    client: &Client,
-    pubkey: PublicKey,
-) -> Result<String, NostrLibError> {
+pub async fn fetch_lud16(client: &Client, pubkey: PublicKey) -> Result<String, NostrLibError> {
     let profile = fetch_profile(client, pubkey).await?;
     profile.lud16.ok_or(NostrLibError::MissingLud16 {
         pubkey: pubkey.to_hex(),

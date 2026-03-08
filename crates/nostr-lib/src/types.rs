@@ -56,7 +56,7 @@ pub struct BountyFulfillment {
     pub zap_receipt_id: Option<EventId>,
 }
 
-/// DCoSL event kinds used in the marketplace.
+/// `DCoSL` event kinds used in the marketplace.
 pub mod kinds {
     use nostr_sdk::Kind;
 

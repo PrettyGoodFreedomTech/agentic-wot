@@ -35,8 +35,7 @@ async fn ensure_loaded(shared: &SharedWallet) -> Result<(), ToolError> {
     let mut guard = shared.lock().await;
     if guard.is_none() {
         let config = wallet_config();
-        let (db, wallet) =
-            bdk_lib::load_wallet(&config).map_err(|e| ToolError(e.to_string()))?;
+        let (db, wallet) = bdk_lib::load_wallet(&config).map_err(|e| ToolError(e.to_string()))?;
         *guard = Some((db, wallet));
     }
     Ok(())
@@ -112,7 +111,9 @@ impl Tool for GetAddressTool {
     async fn call(&self, _args: Self::Args) -> Result<serde_json::Value, ToolError> {
         ensure_loaded(&self.wallet).await?;
         let mut guard = self.wallet.lock().await;
-        let (db, wallet) = guard.as_mut().ok_or(ToolError("Wallet not loaded".into()))?;
+        let (db, wallet) = guard
+            .as_mut()
+            .ok_or(ToolError("Wallet not loaded".into()))?;
         let addr = bdk_lib::next_address(wallet, db).map_err(|e| ToolError(e.to_string()))?;
         serde_json::to_value(addr).map_err(|e| ToolError(e.to_string()))
     }
@@ -140,7 +141,9 @@ impl Tool for SyncWalletTool {
         ensure_loaded(&self.wallet).await?;
         let config = wallet_config();
         let mut guard = self.wallet.lock().await;
-        let (db, wallet) = guard.as_mut().ok_or(ToolError("Wallet not loaded".into()))?;
+        let (db, wallet) = guard
+            .as_mut()
+            .ok_or(ToolError("Wallet not loaded".into()))?;
         bdk_lib::sync_wallet(wallet, db, &config.esplora_url)
             .await
             .map_err(|e| ToolError(e.to_string()))?;
@@ -171,7 +174,9 @@ impl Tool for GetBalanceTool {
     async fn call(&self, _args: Self::Args) -> Result<serde_json::Value, ToolError> {
         ensure_loaded(&self.wallet).await?;
         let guard = self.wallet.lock().await;
-        let (_, wallet) = guard.as_ref().ok_or(ToolError("Wallet not loaded".into()))?;
+        let (_, wallet) = guard
+            .as_ref()
+            .ok_or(ToolError("Wallet not loaded".into()))?;
         let balance = bdk_lib::get_balance(wallet);
         serde_json::to_value(balance).map_err(|e| ToolError(e.to_string()))
     }
@@ -212,7 +217,9 @@ impl Tool for SendBitcoinTool {
         ensure_loaded(&self.wallet).await?;
         let config = wallet_config();
         let mut guard = self.wallet.lock().await;
-        let (db, wallet) = guard.as_mut().ok_or(ToolError("Wallet not loaded".into()))?;
+        let (db, wallet) = guard
+            .as_mut()
+            .ok_or(ToolError("Wallet not loaded".into()))?;
         let result = bdk_lib::send(wallet, db, &config.esplora_url, &args.to, args.amount_sats)
             .await
             .map_err(|e| ToolError(e.to_string()))?;
@@ -241,7 +248,9 @@ impl Tool for ListTransactionsTool {
     async fn call(&self, _args: Self::Args) -> Result<serde_json::Value, ToolError> {
         ensure_loaded(&self.wallet).await?;
         let guard = self.wallet.lock().await;
-        let (_, wallet) = guard.as_ref().ok_or(ToolError("Wallet not loaded".into()))?;
+        let (_, wallet) = guard
+            .as_ref()
+            .ok_or(ToolError("Wallet not loaded".into()))?;
         let txs = bdk_lib::list_transactions(wallet);
         serde_json::to_value(json!({"count": txs.len(), "transactions": txs}))
             .map_err(|e| ToolError(e.to_string()))
@@ -425,8 +434,7 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    let api_key =
-        std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set");
+    let api_key = std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set");
 
     let shared_wallet: SharedWallet = Arc::new(Mutex::new(None));
 
