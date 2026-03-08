@@ -653,7 +653,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "bdk-lib",
- "dcosl-core",
  "dioxus",
  "nostr-lib",
  "phoenixd-lib",

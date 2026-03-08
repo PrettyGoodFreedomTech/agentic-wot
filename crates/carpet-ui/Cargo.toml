@@ -4,21 +4,20 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-nostr-lib = { path = "../nostr-lib" }
-bdk-lib = { path = "../bdk-lib" }
-phoenixd-lib = { path = "../phoenixd-lib" }
-dcosl-core = { path = "../../../dcosl-core" }
 dioxus = { version = "0.7", features = ["router"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 
-# Platform-specific (optional)
+# Backend crates — only needed on the server (they contain C deps that don't compile to wasm)
+nostr-lib = { path = "../nostr-lib", optional = true }
+bdk-lib = { path = "../bdk-lib", optional = true }
+phoenixd-lib = { path = "../phoenixd-lib", optional = true }
 axum = { version = "0.8", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
 
 [features]
 default = []
 web = ["dioxus/web"]
-server = ["dioxus/server", "dep:axum", "dep:tokio"]
+server = ["dioxus/server", "dep:axum", "dep:tokio", "dep:nostr-lib", "dep:bdk-lib", "dep:phoenixd-lib"]
 desktop = ["dioxus/desktop"]
