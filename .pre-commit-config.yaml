@@ -1,0 +1,52 @@
+repos:
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - chore
+          - test
+          - doc
+          - refactor
+          - perf
+          - ci
+          - style
+          - revert
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        language: system
+        entry: cargo fmt --all -- --check
+        pass_filenames: false
+        always_run: true
+        priority: 0
+
+      - id: cargo-machete
+        name: cargo machete
+        language: system
+        entry: cargo machete
+        pass_filenames: false
+        always_run: true
+        priority: 0
+
+      - id: cargo-clippy
+        name: cargo clippy
+        language: system
+        entry: cargo clippy --all-targets -- -W clippy::all -W clippy::pedantic -D warnings
+        pass_filenames: false
+        always_run: true
+        priority: 1
+
+      - id: sem-diff
+        name: sem diff (semantic changes)
+        language: system
+        entry: bash -c 'sem diff --staged --file-exts .rs || true'
+        pass_filenames: false
+        always_run: true
+        verbose: true
+        priority: 2

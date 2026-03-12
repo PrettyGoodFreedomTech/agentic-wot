@@ -6,16 +6,17 @@ use bdk_wallet::bitcoin::Network;
 use tempfile::TempDir;
 
 fn workspace_root() -> PathBuf {
-    std::env::var("WORKSPACE_ROOT")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
+    std::env::var("WORKSPACE_ROOT").map_or_else(
+        |_| {
             PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .parent()
                 .unwrap()
                 .parent()
                 .unwrap()
                 .to_path_buf()
-        })
+        },
+        PathBuf::from,
+    )
 }
 
 fn bitcoin_cli(args: &[&str]) -> String {
@@ -70,18 +71,16 @@ async fn wait_for_sync(
         if balance.confirmed_sats > 0 {
             return;
         }
-        if start.elapsed().as_secs() > timeout_secs {
-            panic!(
-                "Timed out after {}s waiting for confirmed balance",
-                timeout_secs
-            );
-        }
+        assert!(
+            start.elapsed().as_secs() <= timeout_secs,
+            "Timed out after {timeout_secs}s waiting for confirmed balance"
+        );
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     }
 }
 
 #[tokio::test]
-#[ignore]
+#[ignore = "requires Docker infrastructure (bitcoind + esplora)"]
 async fn test_full_wallet_lifecycle() {
     let tmp = TempDir::new().unwrap();
     let config = make_config(&tmp);
@@ -110,9 +109,15 @@ async fn test_full_wallet_lifecycle() {
     let addr2 = next_address(&mut wallet, &mut db).unwrap();
 
     // Send 50M sats to second address
-    let send_result = send(&mut wallet, &mut db, &config.esplora_url, &addr2.address, 50_000_000)
-        .await
-        .unwrap();
+    let send_result = send(
+        &mut wallet,
+        &mut db,
+        &config.esplora_url,
+        &addr2.address,
+        50_000_000,
+    )
+    .await
+    .unwrap();
     assert!(!send_result.txid.is_empty());
     assert!(send_result.fee_sats > 0);
 
@@ -138,7 +143,7 @@ async fn test_full_wallet_lifecycle() {
 }
 
 #[tokio::test]
-#[ignore]
+#[ignore = "requires Docker infrastructure (bitcoind + esplora)"]
 async fn test_wallet_already_exists() {
     let tmp = TempDir::new().unwrap();
     let config = make_config(&tmp);
@@ -147,13 +152,12 @@ async fn test_wallet_already_exists() {
     let err = init_wallet(&config).unwrap_err();
     assert!(
         matches!(err, BdkLibError::WalletAlreadyExists { .. }),
-        "expected WalletAlreadyExists, got: {:?}",
-        err
+        "expected WalletAlreadyExists, got: {err:?}",
     );
 }
 
 #[tokio::test]
-#[ignore]
+#[ignore = "requires Docker infrastructure (bitcoind + esplora)"]
 async fn test_sync_empty_wallet() {
     let tmp = TempDir::new().unwrap();
     let config = make_config(&tmp);

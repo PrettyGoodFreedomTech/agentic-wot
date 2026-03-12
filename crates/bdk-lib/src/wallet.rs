@@ -1,8 +1,8 @@
 use std::fs;
 use std::str::FromStr;
 
-use bdk_esplora::esplora_client;
 use bdk_esplora::EsploraAsyncExt;
+use bdk_esplora::esplora_client;
 use bdk_wallet::bitcoin::bip32::Xpriv;
 use bdk_wallet::bitcoin::{Address, Amount, Network};
 use bdk_wallet::file_store::Store;
@@ -278,6 +278,7 @@ pub async fn send(
         .finish()
         .map_err(|e| BdkLibError::Transaction(e.to_string()))?;
 
+    #[allow(clippy::default_trait_access)]
     let finalized = wallet
         .sign(&mut psbt, Default::default())
         .map_err(|e| BdkLibError::Transaction(e.to_string()))?;
@@ -293,10 +294,7 @@ pub async fn send(
         .map_err(|e| BdkLibError::Transaction(e.to_string()))?;
     let txid = tx.compute_txid();
 
-    let fee_sats = wallet
-        .calculate_fee(&tx)
-        .map(|f| f.to_sat())
-        .unwrap_or(0);
+    let fee_sats = wallet.calculate_fee(&tx).map(Amount::to_sat).unwrap_or(0);
 
     let client = esplora_client::Builder::new(esplora_url)
         .build_async()
@@ -327,7 +325,7 @@ pub fn list_transactions(wallet: &BdkWallet) -> Vec<TxInfo> {
             let fee = wallet
                 .calculate_fee(&tx.tx_node.tx)
                 .ok()
-                .map(|f| f.to_sat());
+                .map(Amount::to_sat);
             let (confirmed, height) = match &tx.chain_position {
                 bdk_wallet::chain::ChainPosition::Confirmed { anchor, .. } => {
                     (true, Some(anchor.block_id.height))

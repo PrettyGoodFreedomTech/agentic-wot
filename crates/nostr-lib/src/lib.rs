@@ -2,10 +2,13 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::must_use_candidate)]
 
-pub mod client;
 pub mod error;
+pub mod filters;
+pub mod profile;
+pub mod service;
 pub mod types;
+pub mod zap;
 
-pub use client::PhoenixdClient;
-pub use error::PhoenixdError;
+pub use error::NostrLibError;
+pub use service::NostrService;
 pub use types::*;

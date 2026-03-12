@@ -16,7 +16,7 @@ impl WalletConfig {
             Network::Testnet => "testnet",
             Network::Signet => "signet",
             Network::Regtest => "regtest",
-            _ => "unknown",
+            Network::Testnet4 => "testnet4",
         };
         Self {
             network,

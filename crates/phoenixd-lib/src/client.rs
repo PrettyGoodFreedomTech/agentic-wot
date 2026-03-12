@@ -1,8 +1,10 @@
-use reqwest::header::{AUTHORIZATION, HeaderValue};
 use reqwest::Client;
+use reqwest::header::{AUTHORIZATION, HeaderValue};
 
 use crate::error::PhoenixdError;
-use crate::types::*;
+use crate::types::{
+    ChannelInfo, IncomingPayment, Invoice, NodeInfo, OutgoingPayment, PaymentResult, WalletBalance,
+};
 
 pub struct PhoenixdClient {
     http: Client,
@@ -117,10 +119,7 @@ impl PhoenixdClient {
         Ok(())
     }
 
-    pub async fn get_incoming_payment(
-        &self,
-        hash: &str,
-    ) -> Result<IncomingPayment, PhoenixdError> {
+    pub async fn get_incoming_payment(&self, hash: &str) -> Result<IncomingPayment, PhoenixdError> {
         let resp = self
             .http
             .get(format!("{}/payments/incoming/{hash}", self.base_url))
@@ -130,10 +129,7 @@ impl PhoenixdClient {
         Self::handle_response(resp).await
     }
 
-    pub async fn get_outgoing_payment(
-        &self,
-        id: &str,
-    ) -> Result<OutgoingPayment, PhoenixdError> {
+    pub async fn get_outgoing_payment(&self, id: &str) -> Result<OutgoingPayment, PhoenixdError> {
         let resp = self
             .http
             .get(format!("{}/payments/outgoing/{id}", self.base_url))
@@ -151,8 +147,6 @@ impl PhoenixdClient {
             return Err(PhoenixdError::Api { message: text });
         }
         let text = resp.text().await?;
-        serde_json::from_str(&text).map_err(|e| {
-            PhoenixdError::Deserialize(format!("{e}: {text}"))
-        })
+        serde_json::from_str(&text).map_err(|e| PhoenixdError::Deserialize(format!("{e}: {text}")))
     }
 }

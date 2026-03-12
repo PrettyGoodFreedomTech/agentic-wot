@@ -1,0 +1,13 @@
+services:
+  phoenixd:
+    image: acinq/phoenixd:latest
+    container_name: phoenixd
+    restart: unless-stopped
+    command: --agree-to-terms-of-service --http-bind-ip=0.0.0.0
+    volumes:
+      - phoenixd-data:/phoenix/.phoenix
+    ports:
+      - "127.0.0.1:9740:9740"
+
+volumes:
+  phoenixd-data:

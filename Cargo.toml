@@ -1,6 +1,15 @@
 [workspace]
 resolver = "2"
 members = ["crates/*"]
+# Exclude carpet-ui from default workspace checks — it needs platform-specific features
+default-members = [
+    "crates/bdk-lib",
+    "crates/bdk-agcli",
+    "crates/phoenixd-lib",
+    "crates/phoenixd-agcli",
+    "crates/carpet-agent",
+    "crates/nostr-lib",
+]
 
 [workspace.package]
 edition = "2024"

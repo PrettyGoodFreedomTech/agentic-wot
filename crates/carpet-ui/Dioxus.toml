@@ -1,0 +1,16 @@
+[application]
+
+[web.app]
+title = "Magic Carpet — Decentralized List Marketplace"
+
+[web.watcher]
+reload_html = true
+watch_path = ["src", "assets"]
+
+[web.resource]
+style = []
+script = []
+
+[web.resource.dev]
+style = []
+script = []
