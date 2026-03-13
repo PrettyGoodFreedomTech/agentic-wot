@@ -9,6 +9,7 @@ default-members = [
     "crates/phoenixd-agcli",
     "crates/carpet-agent",
     "crates/nostr-lib",
+    "crates/dcosl-core",
 ]
 
 [workspace.package]

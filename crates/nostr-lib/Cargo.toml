@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-dcosl-core = { path = "../../../dcosl-core" }
+dcosl-core = { path = "../dcosl-core" }
 nostr-sdk = { version = "0.44", features = ["nip57"] }
 phoenixd-lib = { path = "../phoenixd-lib" }
 serde = { workspace = true }

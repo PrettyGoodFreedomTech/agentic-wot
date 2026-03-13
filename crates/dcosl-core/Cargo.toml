@@ -1,0 +1,16 @@
+[package]
+name = "dcosl-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93.1"
+authors = ["matthiasdebernardini"]
+license = "MIT"
+description = "Pure DCoSL protocol types, tag builders, and utilities — no network, no CLI"
+repository = "https://github.com/matthiasdebernardini/dcosl-core"
+keywords = ["nostr", "dcosl", "decentralized", "lists", "protocol"]
+categories = ["data-structures"]
+
+[dependencies]
+nostr = "0.44"
+serde_json = "1"
+thiserror = "2"
