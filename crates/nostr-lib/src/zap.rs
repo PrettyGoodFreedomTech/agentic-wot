@@ -7,9 +7,7 @@ use crate::profile;
 ///
 /// This returns the zap request event — it should be sent to the LNURL callback,
 /// NOT published to relays.
-#[allow(clippy::too_many_arguments)]
 pub fn build_zap_request(
-    _client: &Client,
     signer: &Keys,
     recipient_pubkey: PublicKey,
     target_event_id: Option<EventId>,
@@ -22,6 +20,12 @@ pub fn build_zap_request(
         .into_iter()
         .filter_map(|u| RelayUrl::parse(&u).ok())
         .collect();
+
+    if relay_urls.is_empty() {
+        return Err(NostrLibError::Zap {
+            reason: "no valid relay URLs for zap routing".into(),
+        });
+    }
 
     let mut zap_data = ZapRequestData::new(recipient_pubkey, relay_urls)
         .amount(amount_msats)
@@ -53,6 +57,12 @@ pub fn lud16_to_lnurl_callback(lud16: &str) -> Result<String, NostrLibError> {
     let (user, domain) = lud16.split_once('@').ok_or(NostrLibError::Lnurl {
         reason: format!("Invalid lud16 format: {lud16}"),
     })?;
+
+    if user.is_empty() || domain.is_empty() || domain.contains('@') {
+        return Err(NostrLibError::Lnurl {
+            reason: format!("Invalid lud16 format: {lud16}"),
+        });
+    }
 
     Ok(format!("https://{domain}/.well-known/lnurlp/{user}"))
 }
@@ -88,7 +98,6 @@ pub async fn prepare_zap(
     };
 
     let zap_request = build_zap_request(
-        client,
         signer,
         recipient_pubkey,
         target_event_id,
@@ -105,6 +114,8 @@ pub async fn prepare_zap(
 mod tests {
     use super::*;
 
+    // ── lud16 ───────────────────────────────────────────────────────
+
     #[test]
     fn lud16_to_lnurl_valid() {
         let url = lud16_to_lnurl_callback("user@example.com").unwrap();
@@ -112,7 +123,92 @@ mod tests {
     }
 
     #[test]
-    fn lud16_to_lnurl_invalid_format() {
+    fn lud16_to_lnurl_invalid_no_at() {
         assert!(lud16_to_lnurl_callback("no-at-sign").is_err());
+    }
+
+    #[test]
+    fn lud16_to_lnurl_empty_user() {
+        assert!(lud16_to_lnurl_callback("@example.com").is_err());
+    }
+
+    #[test]
+    fn lud16_to_lnurl_empty_domain() {
+        assert!(lud16_to_lnurl_callback("user@").is_err());
+    }
+
+    #[test]
+    fn lud16_to_lnurl_multiple_at() {
+        assert!(lud16_to_lnurl_callback("user@a@b").is_err());
+    }
+
+    // ── build_zap_request ───────────────────────────────────────────
+
+    fn test_keys() -> Keys {
+        Keys::generate()
+    }
+
+    fn test_recipient() -> PublicKey {
+        Keys::generate().public_key()
+    }
+
+    #[test]
+    fn zap_request_valid_minimal() {
+        let keys = test_keys();
+        let recipient = test_recipient();
+        let relays = vec!["wss://relay.example.com".to_string()];
+
+        let event = build_zap_request(&keys, recipient, None, None, 1000, relays, None).unwrap();
+
+        assert_eq!(event.kind, Kind::Custom(9734));
+    }
+
+    #[test]
+    fn zap_request_with_event_id() {
+        let keys = test_keys();
+        let recipient = test_recipient();
+        let relays = vec!["wss://relay.example.com".to_string()];
+        let event_id = EventId::all_zeros();
+
+        let event =
+            build_zap_request(&keys, recipient, Some(event_id), None, 1000, relays, None).unwrap();
+
+        let has_e_tag = event.tags.iter().any(|t| {
+            let parts = t.as_slice();
+            parts.first().map(String::as_str) == Some("e")
+        });
+        assert!(has_e_tag, "zap request should contain an 'e' tag");
+    }
+
+    #[test]
+    fn zap_request_empty_relays_errors() {
+        let keys = test_keys();
+        let recipient = test_recipient();
+
+        let result = build_zap_request(&keys, recipient, None, None, 1000, vec![], None);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn zap_request_all_invalid_relays_errors() {
+        let keys = test_keys();
+        let recipient = test_recipient();
+        let relays = vec!["not-a-url".to_string(), "also-bad".to_string()];
+
+        let result = build_zap_request(&keys, recipient, None, None, 1000, relays, None);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn zap_request_mixed_relays_keeps_valid() {
+        let keys = test_keys();
+        let recipient = test_recipient();
+        let relays = vec!["not-a-url".to_string(), "wss://good.relay.com".to_string()];
+
+        let result = build_zap_request(&keys, recipient, None, None, 1000, relays, None);
+
+        assert!(result.is_ok());
     }
 }

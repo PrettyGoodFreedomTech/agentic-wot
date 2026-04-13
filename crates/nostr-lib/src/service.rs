@@ -140,10 +140,18 @@ impl NostrService {
             })
             .collect();
 
-        // Try to fetch curator profile
-        let curator_profile = crate::profile::fetch_profile(&self.client, pubkey)
-            .await
-            .ok();
+        // Try to fetch curator profile — warn on failure so bugs are visible.
+        let curator_profile = match crate::profile::fetch_profile(&self.client, pubkey).await {
+            Ok(p) => Some(p),
+            Err(e) => {
+                tracing::warn!(
+                    pubkey = %pubkey,
+                    error = %e,
+                    "failed to fetch curator profile for marketplace list"
+                );
+                None
+            }
+        };
 
         Ok(MarketplaceList {
             header,
@@ -159,12 +167,16 @@ impl NostrService {
         })
     }
 
-    /// Publish a header event and return it.
+    /// Publish a header event and return its ID.
+    ///
+    /// Returns the `EventId` directly from the relay acknowledgement rather
+    /// than re-fetching the event, which avoids false failures caused by
+    /// eventual consistency on slow relays.
     pub async fn publish_header(
         &self,
         params: dcosl_core::header::HeaderParams,
         addressable: bool,
-    ) -> Result<Event, NostrLibError> {
+    ) -> Result<EventId, NostrLibError> {
         let kind = if addressable {
             kinds::HEADER
         } else {
@@ -180,20 +192,7 @@ impl NostrService {
             }
         })?;
 
-        // Fetch the published event back
-        let filter = Filter::new().id(output.val).limit(1);
-        let events = self
-            .client
-            .fetch_events(filter, FETCH_TIMEOUT)
-            .await
-            .map_err(|e| NostrLibError::Sdk(e.to_string()))?;
-
-        events
-            .into_iter()
-            .next()
-            .ok_or_else(|| NostrLibError::PublishFailed {
-                reason: "Event published but not found on relay".to_string(),
-            })
+        Ok(output.val)
     }
 
     /// Publish an item event and return its ID.
@@ -224,13 +223,20 @@ impl NostrService {
         Ok(output.val)
     }
 
-    /// Paginated fetch with dedupe (same pattern as wokhei).
+    /// Paginated fetch with dedupe.
+    ///
+    /// Uses the oldest timestamp in each batch as the next `until` value
+    /// (without subtracting 1) to avoid dropping events that share a timestamp
+    /// at a page boundary. Deduplication via `seen_ids` prevents re-processing.
+    /// The loop terminates when a batch yields no new (unseen) events.
     async fn fetch_all_events(&self, base_filter: Filter) -> Result<Vec<Event>, NostrLibError> {
+        const MAX_PAGES: usize = 100;
+
         let mut all_events: Vec<Event> = Vec::new();
         let mut seen_ids: HashSet<String> = HashSet::new();
         let mut until_secs: Option<u64> = None;
 
-        loop {
+        for _ in 0..MAX_PAGES {
             let mut filter = base_filter.clone().limit(FETCH_PAGE_SIZE);
             if let Some(secs) = until_secs {
                 filter = filter.until(Timestamp::from_secs(secs));
@@ -246,24 +252,22 @@ impl NostrService {
                 break;
             }
 
+            let mut new_in_batch = 0usize;
             let mut oldest_created_at = u64::MAX;
             for event in batch.iter() {
                 oldest_created_at = oldest_created_at.min(event.created_at.as_secs());
-                let event_id = event.id.to_hex();
-                if seen_ids.insert(event_id) {
+                if seen_ids.insert(event.id.to_hex()) {
                     all_events.push(event.clone());
+                    new_in_batch += 1;
                 }
             }
 
-            if batch.len() < FETCH_PAGE_SIZE || oldest_created_at == 0 {
+            // No new events means we've exhausted this timestamp range.
+            if new_in_batch == 0 || batch.len() < FETCH_PAGE_SIZE || oldest_created_at == 0 {
                 break;
             }
 
-            let next_until = oldest_created_at.saturating_sub(1);
-            if until_secs == Some(next_until) {
-                break;
-            }
-            until_secs = Some(next_until);
+            until_secs = Some(oldest_created_at);
         }
 
         Ok(all_events)

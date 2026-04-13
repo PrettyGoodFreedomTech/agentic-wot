@@ -12,8 +12,6 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
-  BDK_NETWORK: regtest
-  BDK_ESPLORA_URL: http://localhost:3002
 
 jobs:
   check:
@@ -30,8 +28,8 @@ jobs:
       - run: cargo clippy --workspace --locked -- -D warnings
       - run: cargo fmt --all -- --check
 
-  test-unit:
-    name: Unit Tests
+  test:
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -39,24 +37,3 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --locked
-
-  test-e2e:
-    name: E2E Tests (BDK + Regtest)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [check, test-unit]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: extractions/setup-just@v2
-      - name: Start regtest infrastructure
-        run: just e2e-up
-      - name: Run E2E tests
-        run: just e2e-run
-      - name: Teardown infrastructure
-        if: always()
-        run: just e2e-down
-      - name: Show docker logs on failure
-        if: failure()
-        run: docker compose logs && docker compose ps

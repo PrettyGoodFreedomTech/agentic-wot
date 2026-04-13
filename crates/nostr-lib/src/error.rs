@@ -17,6 +17,9 @@ pub enum NostrLibError {
     #[error("Profile not found for pubkey: {pubkey}")]
     ProfileNotFound { pubkey: String },
 
+    #[error("Profile deserialization failed for pubkey {pubkey}: {reason}")]
+    ProfileDeserialize { pubkey: String, reason: String },
+
     #[error("Missing lud16 in profile for pubkey: {pubkey}")]
     MissingLud16 { pubkey: String },
 

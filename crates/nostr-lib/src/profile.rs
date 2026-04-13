@@ -26,8 +26,9 @@ pub async fn fetch_profile(
             pubkey: pubkey.to_hex(),
         })?;
 
-    serde_json::from_str(&event.content).map_err(|_| NostrLibError::ProfileNotFound {
+    serde_json::from_str(&event.content).map_err(|e| NostrLibError::ProfileDeserialize {
         pubkey: pubkey.to_hex(),
+        reason: e.to_string(),
     })
 }
 
@@ -68,4 +69,50 @@ pub async fn fetch_relay_list(
         .collect();
 
     Ok(relays)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::types::ProfileMetadata;
+
+    #[test]
+    fn deserialize_valid_profile() {
+        let json = r#"{"name":"alice","about":"hi","lud16":"alice@example.com"}"#;
+        let profile: ProfileMetadata = serde_json::from_str(json).unwrap();
+        assert_eq!(profile.name.as_deref(), Some("alice"));
+        assert_eq!(profile.lud16.as_deref(), Some("alice@example.com"));
+    }
+
+    #[test]
+    fn deserialize_profile_with_unknown_fields() {
+        let json =
+            r#"{"name":"bob","banner":"https://img.example.com/banner.png","custom_field":42}"#;
+        let profile: ProfileMetadata = serde_json::from_str(json).unwrap();
+        assert_eq!(profile.name.as_deref(), Some("bob"));
+    }
+
+    #[test]
+    fn deserialize_profile_with_missing_optional_fields() {
+        let json = r"{}";
+        let profile: ProfileMetadata = serde_json::from_str(json).unwrap();
+        assert!(profile.name.is_none());
+        assert!(profile.lud16.is_none());
+    }
+
+    #[test]
+    fn deserialize_profile_with_wrong_type_field() {
+        // name is a number instead of string — should coerce to None, not fail
+        let json = r#"{"name":42,"about":"hello"}"#;
+        let profile: ProfileMetadata = serde_json::from_str(json).unwrap();
+        assert!(profile.name.is_none());
+        assert_eq!(profile.about.as_deref(), Some("hello"));
+    }
+
+    #[test]
+    fn deserialize_profile_with_null_field() {
+        let json = r#"{"name":null,"lud16":"alice@example.com"}"#;
+        let profile: ProfileMetadata = serde_json::from_str(json).unwrap();
+        assert!(profile.name.is_none());
+        assert_eq!(profile.lud16.as_deref(), Some("alice@example.com"));
+    }
 }

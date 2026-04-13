@@ -11,7 +11,6 @@ tracing = { workspace = true }
 
 # Backend crates — only needed on the server (they contain C deps that don't compile to wasm)
 nostr-lib = { path = "../nostr-lib", optional = true }
-bdk-lib = { path = "../bdk-lib", optional = true }
 phoenixd-lib = { path = "../phoenixd-lib", optional = true }
 axum = { version = "0.8", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
@@ -19,8 +18,8 @@ tokio = { version = "1", features = ["full"], optional = true }
 [features]
 default = []
 web = ["dioxus/web"]
-server = ["dioxus/server", "dep:axum", "dep:tokio", "dep:nostr-lib", "dep:bdk-lib", "dep:phoenixd-lib"]
+server = ["dioxus/server", "dep:axum", "dep:tokio", "dep:nostr-lib", "dep:phoenixd-lib"]
 desktop = ["dioxus/desktop"]
 
 [package.metadata.cargo-machete]
-ignored = ["axum", "tokio", "nostr-lib", "bdk-lib", "phoenixd-lib", "serde", "serde_json"]
+ignored = ["axum", "tokio", "nostr-lib", "phoenixd-lib", "serde", "serde_json"]

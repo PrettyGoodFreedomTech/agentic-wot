@@ -51,3 +51,49 @@ pub fn relay_list_filter(pubkey: PublicKey) -> Filter {
         .author(pubkey)
         .limit(1)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use nostr_sdk::Keys;
+
+    #[test]
+    fn headers_filter_includes_both_kinds() {
+        let filter = list_headers_filter(None, None);
+        let kinds = filter.kinds.unwrap();
+        assert!(kinds.contains(&kinds::HEADER_REGULAR));
+        assert!(kinds.contains(&kinds::HEADER));
+    }
+
+    #[test]
+    fn headers_filter_with_author() {
+        let pk = Keys::generate().public_key();
+        let filter = list_headers_filter(Some(pk), None);
+        let authors = filter.authors.unwrap();
+        assert!(authors.contains(&pk));
+    }
+
+    #[test]
+    fn items_filter_sets_z_tag() {
+        let z_ref = "39998:abc123:my-list";
+        let filter = list_items_filter(z_ref);
+        let kinds = filter.kinds.unwrap();
+        assert!(kinds.contains(&kinds::ITEM_REGULAR));
+        assert!(kinds.contains(&kinds::ITEM));
+    }
+
+    #[test]
+    fn bounties_filter_has_bounty_hashtag() {
+        let filter = bounties_filter(None);
+        let kinds = filter.kinds.unwrap();
+        assert!(kinds.contains(&kinds::BOUNTY));
+    }
+
+    #[test]
+    fn zap_receipts_filter_correct_kind() {
+        let pk = Keys::generate().public_key();
+        let filter = zap_receipts_filter(pk);
+        let kinds = filter.kinds.unwrap();
+        assert!(kinds.contains(&kinds::ZAP_RECEIPT));
+    }
+}
